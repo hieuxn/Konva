@@ -1,0 +1,7 @@
+<div class="toolbar">
+    @for (command of commands; track command.name) {
+    <button (click)="command.execute()">{{command.name}}</button>
+    } @empty {
+    Empty list of commands
+    }
+</div>
