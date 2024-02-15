@@ -13,8 +13,6 @@ export class KonvaMouseService {
     public mouseUp$ = this.mouseUp.asObservable();
     public mouseMove$ = this.mouseMove.asObservable();
 
-    constructor() { }
-
     public handleMouseDown(event: MouseEvent) {
         this.mouseDown.next(event);
     }

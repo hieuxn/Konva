@@ -1,5 +1,6 @@
 import { AfterViewInit, Component, HostListener } from '@angular/core';
 import Konva from 'konva';
+import { KonvaKeyboardService } from '../services/konva-keyboard.service';
 import { KonvaLayerService } from '../services/konva-layer.service';
 import { KonvaMouseService } from '../services/konva-mouse.service';
 
@@ -27,7 +28,17 @@ export class KonvaComponent implements AfterViewInit {
     this.konvaService.InjectLayer(this.layer);
   }
 
-  constructor(private mouseService: KonvaMouseService, private konvaService: KonvaLayerService) {
+  constructor(private mouseService: KonvaMouseService, private keyboardSerive: KonvaKeyboardService, private konvaService: KonvaLayerService) {
+  }
+
+  @HostListener('document:keydown', ['$event'])
+  public handleKeyDown(event: KeyboardEvent) {
+    this.keyboardSerive.handleKeyDown(event);
+  }
+
+  @HostListener('document:keyup', ['$event'])
+  public handleKeyUp(event: KeyboardEvent) {
+    this.keyboardSerive.handleKeyUp(event);
   }
 
   @HostListener('mousedown', ['$event'])
