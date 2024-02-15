@@ -1,30 +1,15 @@
-import { Injectable } from '@angular/core';
 import Konva from 'konva';
+import { DimensionIndicatorBase } from './dimension-indicator-base';
 
-@Injectable({
-    providedIn: 'root'
-})
-export class DimensionIndicator {
-    private shapes: Konva.Shape[] = [];
-    public drawDimensions(layer: Konva.Layer, shape: Konva.Shape) {
-        this.destroy();
-        this.drawDimensionsImplementation(layer, shape);
-    }
-
-    public destroy() {
-        this.shapes.forEach(shape => shape.destroy())
-    }
-
-    private drawDimensionsImplementation(layer: Konva.Layer, shape: Konva.Shape): void {
-        if (!(shape instanceof Konva.Rect) && !(shape instanceof Konva.Ellipse)) return;
+export class EllipseDimensionIndicator extends DimensionIndicatorBase {
+    protected override drawDimensionsImplementation(layer: Konva.Layer, shape: Konva.Shape): void {
+        if (!(shape instanceof Konva.Ellipse)) return;
 
         this.drawWidthDimensionLine(layer, shape);
         this.drawHeightDimensionLine(layer, shape);
     }
 
     private drawWidthDimensionLine(layer: Konva.Layer, shape: Konva.Shape): void {
-        if (!(shape instanceof Konva.Rect) && !(shape instanceof Konva.Ellipse)) return;
-
         const radius = 10;
         let width = shape.width();
         let height = shape.height();
@@ -33,8 +18,7 @@ export class DimensionIndicator {
         let arrow1X = 0;
         let arrow2X = 0;
 
-        if (shape instanceof Konva.Ellipse) width /= 2;
-        else if (height > 0) y = y + height;
+        width /= 2;
         if (width < 0) {
             width *= 1;
             arrow1X = x - radius;
@@ -86,7 +70,8 @@ export class DimensionIndicator {
         shape.on('dragmove', () => {
             this.updateWidthDimensionPositions(layer, shape, line, arrow1, arrow2, text);
         });
-        arrow1.on('dragmove', event => {
+        arrow1.on('mousedown', event => event.cancelBubble = true);
+        arrow1.on('dragmove', () => {
             const y = arrow2.y();
             const xLeft = arrow2.x();
             let xRight = arrow1.x()
@@ -94,7 +79,7 @@ export class DimensionIndicator {
                 xRight = xLeft - 2 * radius;
             }
             let width = xRight - xLeft + 2 * radius;
-            if (shape instanceof Konva.Ellipse) width *= 2;
+            width *= 2;
 
             arrow1.x(xRight);
             arrow1.y(y)
@@ -110,15 +95,13 @@ export class DimensionIndicator {
     }
 
     private drawHeightDimensionLine(layer: Konva.Layer, shape: Konva.Shape): void {
-        if (!(shape instanceof Konva.Rect) && !(shape instanceof Konva.Ellipse)) return;
-
         const radius = 10;
         let width = shape.width();
         let height = shape.height();
         let x = shape.x();
         let y = shape.y();
 
-        if (shape instanceof Konva.Ellipse) height /= -2;
+        height /= -2;
 
         if (height < 0) {
             y += height;
@@ -172,14 +155,13 @@ export class DimensionIndicator {
             this.updateHeightDimensionPositions(layer, shape, line, arrow1, arrow2, text);
         });
 
+        arrow2.on('mousedown', event => event.cancelBubble = true);
         arrow2.on('dragmove', event => {
             const x = arrow1.x();
             let height = shape.height();
             let yBottom = height + shape.y();
             let yTop = arrow2.y();
-            if (shape instanceof Konva.Ellipse || height < 0) {
-                yBottom = shape.y();
-            }
+            yBottom = shape.y();
             if (yTop > yBottom) {
                 yTop = yBottom;
             }
@@ -189,13 +171,7 @@ export class DimensionIndicator {
             line.points([x, yTop, x, yBottom]);
             text.y((yTop + yBottom) / 2);
 
-            if (shape instanceof Konva.Ellipse || height < 0) {
-                shape.height(height * 2);
-            }
-            else {
-                shape.y(yTop);
-                shape.height(height);
-            }
+            shape.height(height * 2);
 
             text.text(`${Math.abs(Math.round(height))}px`);
             layer.batchDraw();
@@ -210,8 +186,7 @@ export class DimensionIndicator {
         let x = shape.x();
         let y = shape.y();
 
-        if (shape instanceof Konva.Ellipse) width /= 2;
-        else if (height > 0) y = y + height;
+        width /= 2;
         if (width < 0) {
             width *= 1;
             arrow1.position({ x: x - radius, y: y });
@@ -235,7 +210,7 @@ export class DimensionIndicator {
         let x = shape.x();
         let y = shape.y();
 
-        if (shape instanceof Konva.Ellipse) height /= -2;
+        height /= -2;
 
         if (height < 0) {
             y += height;

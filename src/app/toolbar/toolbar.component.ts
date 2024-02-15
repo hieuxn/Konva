@@ -1,10 +1,8 @@
-import { Component } from '@angular/core';
-import { DimensionIndicator } from '../classes/dimension-indicator';
+import { Component, Injector } from '@angular/core';
 import { DrawingCommand } from '../commands/drawing-command';
 import { DrawingEllipseCommand } from '../commands/drawing-ellipse-command';
+import { DrawingPolyLineCommand } from '../commands/drawing-polyline-command';
 import { DrawingRectangleCommand } from '../commands/drawing-rectangle-command';
-import { KonvaService } from '../services/konva.service';
-import { MouseService } from '../services/mouse.service';
 
 
 @Component({
@@ -21,10 +19,18 @@ export class ToolbarComponent {
   // selectShape(shape: string): void {
   //   this.drawShape.emit(shape);
   // }
-  commands!: DrawingCommand[];
-  constructor(private dimensionIndicator: DimensionIndicator, private mouseService: MouseService, private konvaService: KonvaService) {
-    const rectangle = new DrawingRectangleCommand(dimensionIndicator, mouseService, konvaService);
-    const ellipse = new DrawingEllipseCommand(dimensionIndicator, mouseService, konvaService);
-    this.commands = [rectangle, ellipse];
+  public commands!: DrawingCommand[];
+  private currentCommand: DrawingCommand | null = null;
+  constructor(injector: Injector) {
+    const rectangle = injector.get(DrawingRectangleCommand);
+    const ellipse = injector.get(DrawingEllipseCommand);
+    const polyline = injector.get(DrawingPolyLineCommand);
+    this.commands = [rectangle, ellipse, polyline];
+  }
+
+  public execute(drawingCommand: DrawingCommand) {
+    this.currentCommand?.cancel();
+    drawingCommand.execute();
+    this.currentCommand = drawingCommand;
   }
 }

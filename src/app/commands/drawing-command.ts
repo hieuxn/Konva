@@ -1,52 +1,46 @@
+import { Injectable } from '@angular/core';
 import Konva from 'konva';
 import { Subscription } from 'rxjs';
-import { DimensionIndicator } from '../classes/dimension-indicator';
-import { KonvaService } from '../services/konva.service';
-import { MouseService } from '../services/mouse.service';
+import { DimensionIndicator } from '../dimensionIndicators/dimension-indicator';
+import { KonvaLayerService } from '../services/konva-layer.service';
+import { KonvaMouseService } from '../services/konva-mouse.service';
+export interface MouseLocation {
+    x: number,
+    y: number
+}
+
+@Injectable({
+    providedIn: "root"
+})
 
 export abstract class DrawingCommand {
-    protected layer!: Konva.Layer;
-    private startX: number = 0;
-    private startY: number = 0;
-    private endX: number = 0;
-    private endY: number = 0;
-    private shape: Konva.Shape | null = null;
-    private isDrawing: boolean = false;
-    private allowToDraw: boolean = false;
     public abstract name: string;
+    protected layer!: Konva.Layer;
+    protected drawOnMouseDown: boolean = true;
+    private shape: Konva.Shape | null = null;
     private subscriptions: Subscription | null = null;
+    private mouseLocations: MouseLocation[] = [];
+    private mouseUpCount: number = 0;
 
-    constructor(protected dimensionIndicator: DimensionIndicator, private mouseService: MouseService, private konvaService: KonvaService) { }
+    constructor(private mouseService: KonvaMouseService, private konvaService: KonvaLayerService, protected dimensionIndicator: DimensionIndicator) { }
 
-    execute() {
+    public execute() {
         const layer = this.konvaService.GetLayer(0);
         if (!layer) return;
         this.layer = layer;
-        this.allowToDraw = true;
         this.initMouseEvents();
     }
 
-    startDrawing(startX: number, startY: number) {
-        this.startX = startX;
-        this.startY = startY;
-    }
-
-    continueDrawing(endX: number, endY: number) {
-        this.endX = endX;
-        this.endY = endY;
-        this.drawshape();
-    }
-
-    private drawshape() {
-        if (this.shape) {
-            this.shape.destroy();
+    public cancel() {
+        if (this.subscriptions) {
+            this.subscriptions.unsubscribe()
+            this.subscriptions = null;
+            this.shape = null;
+            this.mouseUpCount = 0;
+            this.mouseLocations.length = 0;
         }
-
-        this.shape = this.drawShape(this.startX, this.endX, this.startY, this.endY)
-        if (!this.shape) return;
-
-        this.layer.draw();
     }
+
 
     private initMouseEvents() {
         this.subscriptions = new Subscription();
@@ -66,47 +60,56 @@ export abstract class DrawingCommand {
     }
 
     private handleMouseDown(event: MouseEvent) {
-        if (!this.allowToDraw) return;
-        this.isDrawing = true;
-        const pointerPosition = this.layer.getRelativePointerPosition() ?? { x: 0, y: 0 };
-        const { x: startX, y: startY } = pointerPosition;
-        this.onMouseDown(startX, startY);
+        if (!this.drawOnMouseDown) return;
+        const pointerPosition = this.layer.getRelativePointerPosition();
+        if (!pointerPosition) return;
+
+        this.handleMouseClick(pointerPosition);
     }
 
     private handleMouseUp(event: MouseEvent) {
-        if (!this.isDrawing) return;
-        const pointerPosition = this.layer.getRelativePointerPosition() ?? { x: 0, y: 0 };
-        const { x: endX, y: endY } = pointerPosition;
-        this.onMouseUp(endX, endY);
-        this.isDrawing = false;
-        this.allowToDraw = false;
-        if (this.subscriptions) {
-            this.subscriptions.unsubscribe()
-            this.subscriptions = null;
-        }
+        if (this.drawOnMouseDown) return;
+        const pointerPosition = this.layer.getRelativePointerPosition();
+        if (!pointerPosition) return;
+
+        this.handleMouseClick(pointerPosition);
     }
 
     private handleMouseMove(event: MouseEvent) {
-        if (!this.isDrawing) {
-            this.shape = null;
-            return;
-        }
-        const pointerPosition = this.layer.getRelativePointerPosition() ?? { x: 0, y: 0 };
-        const { x: endX, y: endY } = pointerPosition;
-        this.onMouseMove(endX, endY);
+        const pointerPosition = this.layer.getRelativePointerPosition();
+        if (!pointerPosition) return;
+
+        this.handleMouseMovement(pointerPosition);
     }
 
-    protected onMouseDown(startX: number, startY: number) {
-        this.startDrawing(startX, startY);
+    private handleMouseClick(mouseLocation: MouseLocation) {
+        if (this.mouseLocations.length > 0) this.mouseLocations[this.mouseLocations.length - 1] = mouseLocation;
+        else this.mouseLocations.push(mouseLocation);
+        ++this.mouseUpCount;
+
+        const isFinished = this.isFinished(this.mouseLocations);
+        if (this.mouseLocations.length > 0) this.drawShape();
+        if (!isFinished) return;
+
+        this.cancel();
     }
 
-    protected onMouseUp(endX: number, endY: number) {
-        this.continueDrawing(endX, endY);
+    private handleMouseMovement(mouseLocation: MouseLocation) {
+        if (this.mouseLocations.length == 0) return;
+        if (this.mouseUpCount == this.mouseLocations.length) this.mouseLocations.push(mouseLocation);
+        else if (this.mouseUpCount + 1 == this.mouseLocations.length) this.mouseLocations[this.mouseLocations.length - 1] = mouseLocation;
+        if (this.mouseLocations.length > 0) this.drawShape();
     }
 
-    protected onMouseMove(endX: number, endY: number) {
-        this.continueDrawing(endX, endY);
+    private drawShape() {
+        if (this.shape) this.shape.destroy();
+
+        this.shape = this.drawShapeImplementation(this.mouseLocations)
+        if (!this.shape) return;
+
+        this.layer.draw();
     }
 
-    protected abstract drawShape(startX: number, endX: number, startY: number, endY: number): Konva.Shape | null
+    protected abstract isFinished(mouseLocations: MouseLocation[]): boolean;
+    protected abstract drawShapeImplementation(mouseLocations: MouseLocation[]): Konva.Shape | null
 }

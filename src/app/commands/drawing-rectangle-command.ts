@@ -1,9 +1,18 @@
-import { default as Konva, default as Konya } from "konva";
-import { DrawingCommand } from "./drawing-command";
+import { Injectable } from "@angular/core";
+import { default as Konva } from "konva";
+import { DrawingCommand, MouseLocation } from "./drawing-command";
+@Injectable({
+    providedIn: "root"
+})
 
 export class DrawingRectangleCommand extends DrawingCommand {
     public override name: string = "Draw Rectangle";
-    protected override drawShape(startX: number, endX: number, startY: number, endY: number): Konya.Shape | null {
+    protected override isFinished(mouseLocations: MouseLocation[]): boolean {
+        return mouseLocations.length >= 2;
+    }
+    protected override drawShapeImplementation(mouseLocations: MouseLocation[]): Konva.Shape | null {
+        if (mouseLocations.length < 2) return null;
+        const [{ x: startX, y: startY }, { x: endX, y: endY }] = mouseLocations;
         const rect = new Konva.Rect({
             x: startX,
             y: startY,

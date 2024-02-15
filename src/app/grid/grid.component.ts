@@ -2,8 +2,8 @@ import { CommonModule } from '@angular/common';
 import { AfterViewInit, Component, ElementRef, HostListener, ViewChild } from '@angular/core';
 import Konva from 'konva';
 import { Subscription } from 'rxjs';
-import { KonvaService } from '../services/konva.service';
-import { MouseService } from '../services/mouse.service';
+import { KonvaLayerService } from '../services/konva-layer.service';
+import { KonvaMouseService } from '../services/konva-mouse.service';
 
 @Component({
   selector: 'app-grid',
@@ -21,7 +21,7 @@ export class GridComponent implements AfterViewInit {
   private lastPointerPosition: { x: number; y: number } = { x: 0, y: 0 };
   private subscriptions: Subscription | null = null;
 
-  constructor(private mouseService: MouseService, private konvaService: KonvaService) {
+  constructor(private mouseService: KonvaMouseService, private konvaService: KonvaLayerService) {
 
   }
   ngAfterViewInit(): void {

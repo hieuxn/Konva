@@ -1,7 +1,7 @@
 import { AfterViewInit, Component, HostListener } from '@angular/core';
 import Konva from 'konva';
-import { KonvaService } from '../services/konva.service';
-import { MouseService } from '../services/mouse.service';
+import { KonvaLayerService } from '../services/konva-layer.service';
+import { KonvaMouseService } from '../services/konva-mouse.service';
 
 @Component({
   selector: 'app-konva',
@@ -10,9 +10,9 @@ import { MouseService } from '../services/mouse.service';
   templateUrl: './konva.component.html',
   styleUrl: './konva.component.scss',
 })
+
 export class KonvaComponent implements AfterViewInit {
   private layer!: Konva.Layer;
-  private num: number = 0;
   private static number: number = 0;
   public ngAfterViewInit() {
     const stage = new Konva.Stage({
@@ -27,8 +27,7 @@ export class KonvaComponent implements AfterViewInit {
     this.konvaService.InjectLayer(this.layer);
   }
 
-  constructor(private mouseService: MouseService, private konvaService: KonvaService) {
-    this.num = ++KonvaComponent.number;
+  constructor(private mouseService: KonvaMouseService, private konvaService: KonvaLayerService) {
   }
 
   @HostListener('mousedown', ['$event'])
@@ -36,7 +35,7 @@ export class KonvaComponent implements AfterViewInit {
     this.mouseService.handleMouseDown(event);
   }
 
-  @HostListener('mouseup')
+  @HostListener('mouseup', ['$event'])
   public handleMouseUp(event: MouseEvent) {
     this.mouseService.handleMouseUp(event);
   }

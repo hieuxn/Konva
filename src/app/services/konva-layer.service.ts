@@ -1,19 +1,19 @@
 import { Injectable } from "@angular/core";
 import Konva from "konva";
-import { DimensionIndicator } from "../classes/dimension-indicator";
+import { DimensionIndicator } from "../dimensionIndicators/dimension-indicator";
 
 @Injectable({
     providedIn: 'root'
 })
-export class KonvaService {
+export class KonvaLayerService {
     private stage!: Konva.Stage;
     private layers: Konva.Layer[] = [];
-    public constructor(private dimensionIndicator: DimensionIndicator) { }
+    public constructor(private dimensionIndicatorManager: DimensionIndicator) { }
     public InjectStage(stage: Konva.Stage) {
         this.stage = stage;
-        // stage.on('mousedown', event => {
-        //     this.dimensionIndicator.destroy()
-        // })
+        stage.on('mousedown', event => {
+            this.dimensionIndicatorManager.destroy()
+        })
     }
     public InjectLayer(layer: Konva.Layer) {
         this.layers.push(layer);

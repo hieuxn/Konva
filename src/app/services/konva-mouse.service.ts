@@ -4,7 +4,7 @@ import { Subject } from 'rxjs';
 @Injectable({
     providedIn: 'root'
 })
-export class MouseService {
+export class KonvaMouseService {
     private mouseDown = new Subject<MouseEvent>();
     private mouseUp = new Subject<MouseEvent>();
     private mouseMove = new Subject<MouseEvent>();
