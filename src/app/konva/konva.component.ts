@@ -41,6 +41,11 @@ export class KonvaComponent implements AfterViewInit {
     this.keyboardSerive.handleKeyUp(event);
   }
 
+  @HostListener('document:contextmenu', ['$event'])
+  public handleMouseContextMenu(event: MouseEvent) {
+    this.mouseService.handleMouseContextMenu(event);
+  }
+
   @HostListener('mousedown', ['$event'])
   public handleMouseDown(event: MouseEvent) {
     this.mouseService.handleMouseDown(event);

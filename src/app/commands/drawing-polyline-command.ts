@@ -1,5 +1,6 @@
 import { Injectable } from "@angular/core";
 import Konva from "konva";
+import { ContextMenuGenericCommand } from "../context-menu/commands/context-menu-generic-command";
 import { DrawingCommand, MouseLocation } from "./drawing-command";
 @Injectable({
     providedIn: "root"
@@ -7,25 +8,48 @@ import { DrawingCommand, MouseLocation } from "./drawing-command";
 
 export class DrawingPolyLineCommand extends DrawingCommand {
     public override name: string = "Draw Polyline";
-    private static readonly SnappingDistance: number = 10; // px
+    private readonly shiftKey: string = "Shift";
+    private readonly snappingDistance: number = 10; // px
     private isDrawingFinished: boolean = false;
+    private forceFinish: boolean = false;
     private shiftPressing: boolean = false;
 
     protected override onKeyDown(event: KeyboardEvent) {
-        this.shiftPressing = event.key == 'Shift';
+        this.shiftPressing = event.key == this.shiftKey;
     }
 
     protected override onKeyUp(event: KeyboardEvent) {
-        this.shiftPressing = this.shiftPressing && !(event.key == 'Shift');
+        this.shiftPressing = this.shiftPressing && !(event.key == this.shiftKey);
     }
 
     private arePointsEqual(point1: MouseLocation, point2: MouseLocation, tolerance: number): boolean {
         return Math.abs(point1.x - point2.x) < tolerance && Math.abs(point1.y - point2.y) < tolerance;
     }
 
+    protected override onInit() {
+        this.contextMenuCommmands.push(ContextMenuGenericCommand.Create('Finish', () => {
+            this.isDrawingFinished = this.forceFinish = true;
+            this.onMouseClick(this.mouseLocations[this.mouseLocations.length - 1]);
+        }));
+    }
+
+    public override execute(): void {
+        super.execute();
+        this.isDrawingFinished = false;
+        this.shiftPressing = false;
+        this.forceFinish = false;
+    }
+
+    protected override onMenuContextOpen(mouseEvent: MouseEvent): void {
+        super.onMenuContextOpen(mouseEvent);
+        this.contextMenuWrapper.value.open(mouseEvent, this.contextMenuCommmands);
+    }
+
     protected override isFinished(mouseLocations: MouseLocation[]): boolean {
-        return this.isDrawingFinished = mouseLocations.length >= 2
-            && this.arePointsEqual(mouseLocations[mouseLocations.length - 1], mouseLocations[0], DrawingPolyLineCommand.SnappingDistance);
+        if (this.forceFinish) return this.isDrawingFinished = true;
+        const isClosedPolyline = mouseLocations.length >= 2
+            && this.arePointsEqual(mouseLocations[mouseLocations.length - 1], mouseLocations[0], this.snappingDistance);
+        return this.isDrawingFinished = isClosedPolyline;
     }
 
     protected override drawShapeImplementation(mouseLocations: MouseLocation[]): Konva.Shape | null {
@@ -41,7 +65,7 @@ export class DrawingPolyLineCommand extends DrawingCommand {
             draggable: true,
             lineJoin: 'round',
             strokeWidth: 4,
-            closed: this.isDrawingFinished
+            closed: this.isDrawingFinished && !this.forceFinish
         });
         this.layer.add(polyline);
         if (this.isDrawingFinished) {

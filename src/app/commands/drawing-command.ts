@@ -1,7 +1,9 @@
 import { Injectable } from '@angular/core';
 import Konva from 'konva';
 import { Subscription } from 'rxjs';
+import { ContextMenuCommandBase } from '../context-menu/commands/context-menu-command-base';
 import { DimensionIndicator } from '../dimensionIndicators/dimension-indicator';
+import { ContextMenuService, ContextMenuWrapper } from '../services/context-menu.service';
 import { KonvaKeyboardService } from '../services/konva-keyboard.service';
 import { KonvaLayerService } from '../services/konva-layer.service';
 import { KonvaMouseService } from '../services/konva-mouse.service';
@@ -20,14 +22,20 @@ export abstract class DrawingCommand {
     protected drawOnMouseDown: boolean = true;
     protected mouseLocations: MouseLocation[] = [];
     protected subscriptions: Subscription | null = null;
+    protected contextMenuCommmands: ContextMenuCommandBase[] = [];
+    protected contextMenuWrapper!: ContextMenuWrapper;
     private shape: Konva.Shape | null = null;
     private mouseUpCount: number = 0;
 
     constructor(
+        contextMenuService: ContextMenuService,
         private mouseService: KonvaMouseService,
         private keyboardService: KonvaKeyboardService,
         private konvaService: KonvaLayerService,
-        protected dimensionIndicator: DimensionIndicator) { }
+        protected dimensionIndicator: DimensionIndicator) {
+        this.onInit();
+        this.contextMenuWrapper ??= contextMenuService.lazyGet();
+    }
 
     public execute() {
         const layer = this.konvaService.GetLayer(0);
@@ -44,6 +52,9 @@ export abstract class DrawingCommand {
             this.mouseUpCount = 0;
             this.mouseLocations.length = 0;
         }
+    }
+
+    protected onInit() {
     }
 
     protected onKeyDown(event: KeyboardEvent) {
@@ -71,6 +82,9 @@ export abstract class DrawingCommand {
         if (this.mouseLocations.length > 0) this.drawShape();
     }
 
+    protected onMenuContextOpen(mouseEvent: MouseEvent) {
+    }
+
     protected abstract isFinished(mouseLocations: MouseLocation[]): boolean;
 
     protected abstract drawShapeImplementation(mouseLocations: MouseLocation[]): Konva.Shape | null;
@@ -91,6 +105,12 @@ export abstract class DrawingCommand {
             .subscribe((event: MouseEvent) => {
                 this.handleMouseMove(event);
             }));
+
+        this.subscriptions.add(this.mouseService.mouseContextMenu$
+            .subscribe((event: MouseEvent) => {
+                this.onMenuContextOpen(event);
+            }));
+
 
         this.subscriptions.add(this.keyboardService.keyDown$
             .subscribe((event: KeyboardEvent) => {

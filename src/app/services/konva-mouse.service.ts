@@ -8,10 +8,12 @@ export class KonvaMouseService {
     private mouseDown = new Subject<MouseEvent>();
     private mouseUp = new Subject<MouseEvent>();
     private mouseMove = new Subject<MouseEvent>();
+    private mouseContextMenu = new Subject<MouseEvent>();
 
     public mouseDown$ = this.mouseDown.asObservable();
     public mouseUp$ = this.mouseUp.asObservable();
     public mouseMove$ = this.mouseMove.asObservable();
+    public mouseContextMenu$ = this.mouseContextMenu.asObservable();
 
     public handleMouseDown(event: MouseEvent) {
         this.mouseDown.next(event);
@@ -23,5 +25,9 @@ export class KonvaMouseService {
 
     public handleMouseMove(event: MouseEvent) {
         this.mouseMove.next(event);
+    }
+
+    public handleMouseContextMenu(event: MouseEvent) {
+        this.mouseContextMenu.next(event);
     }
 }
